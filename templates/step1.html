@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Paso 1 – Datos generales{% endblock %}
+{% block content %}
+<h2>Paso 1/4 – Datos generales</h2>
+<form method="post">
+  <div class="mb-3">
+    <label for="pozo" class="form-label">Pozo *</label>
+    <input class="form-control" list="pozos" name="pozo" id="pozo" required>
+    <datalist id="pozos">
+      {% for p in pozos %}<option value="{{p}}">{% endfor %}
+    </datalist>
+  </div>
+  <div class="mb-3">
+    <label for="fecha" class="form-label">Fecha y hora *</label>
+    <input type="datetime-local" class="form-control" id="fecha" name="fecha" required>
+  </div>
+  <div class="mb-3">
+    <label for="obs_ini" class="form-label">Observaciones iniciales</label>
+    <textarea class="form-control" id="obs_ini" name="obs_ini" rows="2"></textarea>
+  </div>
+  <button type="submit" class="btn btn-primary">Siguiente</button>
+</form>
+{% endblock %}
