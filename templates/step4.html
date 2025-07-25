@@ -30,18 +30,15 @@
 <form method="post" class="mb-3">
   <div class="mb-3">
     <label class="form-label">Observaciones finales</label>
-    <textarea class="form-control" name="obs_final" rows="2"></textarea>
+    <textarea class="form-control" name="obs_final" rows="2">{{ general.obs_final or "" }}</textarea>
   </div>
   <button type="submit" name="download" class="btn btn-secondary">
-    Generar informe (Descargar PDF)
+    Descargar PDF
+  </button>
+  <button type="submit" name="send" class="btn btn-primary">
+    Abrir en Outlook (con adjunto)
   </button>
 </form>
-
-<a href="mailto:dest1@dominio.com,dest2@dominio.com
-?subject=Informe%20de%20intervención%20Pozo%20{{ general.pozo }}
-&body=Adjunto%20informe.%0A%0APor%20favor%20adjunta%20el%20PDF%20descargado."
-   class="btn btn-primary">
-  Enviar por Outlook
-</a>
 {% endblock %}
+
 
