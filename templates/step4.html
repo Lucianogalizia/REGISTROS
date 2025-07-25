@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Paso 4 – Revisión y envío{% endblock %}
+{% block content %}
+<h2>Paso 4/4 – Revisión y envío</h2>
+<p><strong>Pozo:</strong> {{general.pozo}}<br>
+<strong>Fecha:</strong> {{general.fecha}}</p>
+{% if general.obs_ini %}
+  <p><strong>Obs. iniciales:</strong> {{general.obs_ini}}</p>
+{% endif %}
+<h4>Materiales:</h4>
+<ul>
+  {% for item in items %}
+    <li>
+      <strong>{{item.tipo}}</strong> — {{item.profundidad}} m — {{item.estado}}
+      {% if item.comentario %}<br><em>{{item.comentario}}</em>{% endif %}
+      {% for photo in item.fotos %}
+        <div class="mt-2">
+          <img src="data:image/png;base64,{{ photo.file|b64encode }}" class="img-thumbnail" width="100">
+          <p>{{ photo.tag }}</p>
+        </div>
+      {% endfor %}
+    </li>
+  {% endfor %}
+</ul>
+<form method="post" class="mb-3">
+  <div class="mb-3">
+    <label class="form-label">Observaciones finales</label>
+    <textarea class="form-control" name="obs_final" rows="2"></textarea>
+  </div>
+  <button type="submit" name="download" class="btn btn-secondary">
+    Generar informe (Descargar PDF)
+  </button>
+</form>
+<a
+  href="mailto:dest1@dominio.com,dest2@dominio.com?subject=Informe%20de%20intervención%20Pozo%20{{ general.pozo }}&body=Adjunto%20informe.%0A%0APor%20favor%20adjunta%20el%20PDF%20descargado."
+  class="btn btn-primary"
+>
+  Enviar por Outlook
+</a>
+{% endblock %}
