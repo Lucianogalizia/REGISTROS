@@ -1,0 +1,14 @@
+body {
+  background-color: #F0F2F6;
+}
+.navbar {
+  background-color: #1f77b4 !important;
+}
+.btn-primary {
+  background-color: #1f77b4;
+  border-color: #1f77b4;
+}
+.btn-secondary {
+  background-color: #6c757d;
+  border-color: #6c757d;
+}
