@@ -43,77 +43,75 @@ def generate_pdf(general, items, obs_final):
     pdf.set_font("Arial", size=12)
 
     # Cabecera
-    pdf.cell(0, 10, f"Informe - Pozo: {general['pozo']}", ln=True)
-    pdf.cell(0, 8,  f"Fecha: {general['fecha']}", ln=True)
+    pdf.cell(0,10, f"Informe - Pozo: {general['pozo']}", ln=True)
+    pdf.cell(0, 8, f"Fecha: {general['fecha']}", ln=True)
     if general.get("obs_ini"):
-        pdf.multi_cell(0, 6, f"Obs. iniciales: {general['obs_ini']}")
+        pdf.multi_cell(0,6, f"Obs. iniciales: {general['obs_ini']}")
     pdf.ln(4)
 
-    # Márgenes y ancho útil
-    page_w    = pdf.w
-    lm, rm    = pdf.l_margin, pdf.r_margin
-    usable_w  = page_w - lm - rm
+    # Margen y ancho útil
+    lm = pdf.l_margin
+    rm = pdf.r_margin
+    usable_w = pdf.w - lm - rm
 
     for idx, item in enumerate(items, 1):
-        # Título de ítem
+        # Título
         pdf.set_font("Arial", "B", 12)
-        pdf.cell(
-            0, 8,
-            f"Ítem {idx}: {item['tipo']} - {item['profundidad']}m - {item['estado']}",
-            ln=True
-        )
+        pdf.cell(0,8,
+                 f"Ítem {idx}: {item['tipo']} - {item['profundidad']}m - {item['estado']}",
+                 ln=True)
         pdf.set_font("Arial", size=11)
         if item.get("comentario"):
-            pdf.multi_cell(0, 6, f"Comentario: {item['comentario']}")
+            pdf.multi_cell(0,6, f"Comentario: {item['comentario']}")
         pdf.ln(2)
 
         fotos = item.get("fotos", [])
-        n_imgs = len(fotos)
-        if n_imgs:
-            # Espacio interno y ancho de cada imagen
-            spacing = 5  # mm
-            w_img   = (usable_w - (n_imgs - 1) * spacing) / n_imgs
+        n = len(fotos)
+        if n:
+            spacing = 5
+            w_img = (usable_w - (n-1)*spacing) / n
 
-            # Posición inicial para centrar todo el grupo
-            group_w = n_imgs * w_img + (n_imgs - 1) * spacing
-            x_start = lm + (usable_w - group_w) / 2
-            y0      = pdf.get_y()
+            # Centramos el bloque
+            group_w = n*w_img + (n-1)*spacing
+            x_start = lm + (usable_w - group_w)/2
+            y0 = pdf.get_y()
 
-            # Calculamos alturas reales y dibujamos
+            # Insertamos imágenes y medimos sus alturas
             heights = []
             for i, foto in enumerate(fotos):
+                # Medimos altura real vía Pillow
                 img_data = foto["file"]
-                # Descubrimos medidas reales
                 with Image.open(io.BytesIO(img_data)) as img:
                     orig_w, orig_h = img.size
-                new_h = orig_h * (w_img / orig_w)
-                heights.append(new_h)
+                h_img = orig_h * (w_img/orig_w)
+                heights.append(h_img)
 
-                # Insertamos imagen
-                x = x_start + i * (w_img + spacing)
+                x = x_start + i*(w_img+spacing)
                 pdf.image(io.BytesIO(img_data), x=x, y=y0, w=w_img)
 
             max_h = max(heights)
 
-            # Etiquetas bajo cada imagen
+            # Etiquetas: multi_cell envuelve el texto al ancho w_img
             pdf.set_font("Arial", size=10)
+            y_label_end = y0
             for i, foto in enumerate(fotos):
-                x = x_start + i * (w_img + spacing)
+                x = x_start + i*(w_img+spacing)
                 pdf.set_xy(x, y0 + max_h + 1)
-                pdf.cell(w_img, 5, foto["tag"], align="C")
+                pdf.multi_cell(w_img, 5, foto["tag"], align="C")
+                # guardamos la posición más baja alcanzada
+                y_label_end = max(y_label_end, pdf.get_y())
 
-            # Finalmente, movemos el cursor **debajo** del bloque
-            y_end = y0 + max_h + 1 + 5 + 4  # img + gap + etiqueta(5mm) + padding(4mm)
+            # Reposicionamos cursor justo debajo del bloque completo
+            y_end = y_label_end + 4
             pdf.set_xy(lm, y_end)
 
-        # Un pequeño espacio antes del siguiente ítem
         pdf.ln(4)
 
     # Observaciones finales
     if obs_final:
-        pdf.multi_cell(0, 6, f"Obs. finales: {obs_final}")
+        pdf.multi_cell(0,6, f"Obs. finales: {obs_final}")
 
-    # Volcar a buffer
+    # Devolvemos buffer
     out = io.BytesIO()
     pdf.output(out)
     out.seek(0)
