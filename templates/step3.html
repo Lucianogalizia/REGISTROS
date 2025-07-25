@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Paso 3 – Fotos y etiquetas{% endblock %}
+{% block content %}
+<h2>Paso 3/4 – Fotos y etiquetas</h2>
+<form method="post" enctype="multipart/form-data">
+  {% for idx,item in enumerate(items) %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Ítem {{idx+1}}: {{item.tipo}} / {{item.profundidad}} m</h5>
+        <div class="row">
+          {% for f in range(3) %}
+            <div class="col-4 mb-2">
+              <label class="form-label">Foto {{f+1}}</label>
+              <input type="file" class="form-control" name="foto_{{idx}}_{{f}}" accept="image/*">
+              <label class="form-label mt-1">Etiqueta</label>
+              <input type="text" class="form-control" name="tag_{{idx}}_{{f}}">
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+  <button type="submit" class="btn btn-primary">Siguiente</button>
+</form>
+{% endblock %}
