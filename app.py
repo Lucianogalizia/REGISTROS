@@ -8,17 +8,20 @@ from flask import (
 from fpdf import FPDF
 import pandas as pd
 
+# ————— Inicialización de la app —————
 app = Flask(__name__)
-# Lee SECRET_KEY de entorno o usa un fallback
+
+# Hacemos disponibles enumerate y range en Jinja
+app.jinja_env.globals.update(enumerate=enumerate, range=range)
+
+# Clave secreta para sesiones
 app.secret_key = os.getenv('SECRET_KEY', 'CAMBIÁ_POR_UNA_SECRETA')
 
 # ————— Carga lista de pozos desde Excel —————
-# Lee el Excel tal cual, sin parámetro decimal
 df = pd.read_excel("pozos.xlsx")
-# Toma sólo la columna "POZO" como strings
 POZOS = df["POZO"].dropna().astype(str).tolist()
 
-# Generador de PDF
+# ————— Función para generar el PDF —————
 def generate_pdf(general, items, obs_final):
     pdf = FPDF()
     pdf.add_page()
@@ -30,9 +33,11 @@ def generate_pdf(general, items, obs_final):
     pdf.ln(4)
     for i, item in enumerate(items, 1):
         pdf.set_font("Arial", "B", 12)
-        pdf.cell(0, 8,
-                 f"Ítem {i}: {item['tipo']} — {item['profundidad']} m — {item['estado']}",
-                 ln=True)
+        pdf.cell(
+            0, 8,
+            f"Ítem {i}: {item['tipo']} — {item['profundidad']} m — {item['estado']}",
+            ln=True
+        )
         pdf.set_font("Arial", size=11)
         if item["comentario"]:
             pdf.multi_cell(0, 6, f"Comentario: {item['comentario']}")
@@ -51,13 +56,13 @@ def generate_pdf(general, items, obs_final):
     out.seek(0)
     return out
 
-# --- Rutas wizard ---
+# ————— Rutas del wizard —————
 
 @app.route("/", methods=["GET", "POST"])
 def step1():
     if request.method == "POST":
-        pozo = request.form.get("pozo")
-        fecha = request.form.get("fecha")
+        pozo   = request.form.get("pozo")
+        fecha  = request.form.get("fecha")
         obs_ini = request.form.get("obs_ini")
         if not pozo or not fecha:
             flash("Completa los campos obligatorios.", "danger")
@@ -74,10 +79,10 @@ def step1():
 @app.route("/step2", methods=["GET", "POST"])
 def step2():
     if request.method == "POST":
-        tipo = request.form.get("tipo")
+        tipo        = request.form.get("tipo")
         profundidad = request.form.get("profundidad")
-        estado = request.form.get("estado")
-        comentario = request.form.get("comentario")
+        estado      = request.form.get("estado")
+        comentario  = request.form.get("comentario")
         if not tipo or not profundidad or not estado:
             flash("Completa los campos obligatorios.", "danger")
         else:
@@ -91,11 +96,10 @@ def step2():
             items = session.get("items", [])
             items.append(item)
             session["items"] = items
-            # Si viene “next”, pasa al siguiente; si no, queda en step2 para agregar más
+            # Si pulsó “Siguiente” va al paso 3, si solo añadió queda en 2
             if "next" in request.form:
                 return redirect(url_for("step3"))
-            else:
-                return redirect(url_for("step2"))
+            return redirect(url_for("step2"))
     return render_template("step2.html")
 
 @app.route("/step3", methods=["GET", "POST"])
@@ -106,7 +110,7 @@ def step3():
         for idx, item in enumerate(items):
             fotos = []
             for fidx in range(3):
-                f = request.files.get(f"foto_{idx}_{fidx}")
+                f   = request.files.get(f"foto_{idx}_{fidx}")
                 tag = request.form.get(f"tag_{idx}_{fidx}")
                 if f:
                     fotos.append({"file": f.read(), "tag": tag})
@@ -119,10 +123,10 @@ def step3():
 @app.route("/step4", methods=["GET", "POST"])
 def step4():
     general = session.get("general", {})
-    items = session.get("items", [])
+    items   = session.get("items", [])
     if request.method == "POST" and "download" in request.form:
         obs_final = request.form.get("obs_final")
-        pdf_buf = generate_pdf(general, items, obs_final)
+        pdf_buf   = generate_pdf(general, items, obs_final)
         return send_file(
             pdf_buf,
             as_attachment=True,
@@ -133,3 +137,4 @@ def step4():
 
 if __name__ == "__main__":
     app.run()
+
