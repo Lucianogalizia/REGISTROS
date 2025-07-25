@@ -39,36 +39,71 @@ def generate_pdf(general, items, obs_final):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    # Usar guion simple en lugar de em-dash
+
+    # Cabecera
     pdf.cell(0, 10, f"Informe - Pozo: {general['pozo']}", ln=True)
-    pdf.cell(0, 8, f"Fecha: {general['fecha']}", ln=True)
-    if general["obs_ini"]:
+    pdf.cell(0, 8,  f"Fecha: {general['fecha']}", ln=True)
+    if general.get("obs_ini"):
         pdf.multi_cell(0, 6, f"Obs. iniciales: {general['obs_ini']}")
     pdf.ln(4)
 
-    for i, item in enumerate(items, 1):
-        # También aquí guiones simples
+    # Parámetros de margen
+    page_width   = pdf.w
+    left_margin  = pdf.l_margin
+    right_margin = pdf.r_margin
+    usable_width = page_width - left_margin - right_margin
+
+    for idx, item in enumerate(items, 1):
+        # Título de ítem
         pdf.set_font("Arial", "B", 12)
         pdf.cell(
             0, 8,
-            f"Ítem {i}: {item['tipo']} - {item['profundidad']}m - {item['estado']}",
+            f"Ítem {idx}: {item['tipo']} - {item['profundidad']}m - {item['estado']}",
             ln=True
         )
         pdf.set_font("Arial", size=11)
-        if item["comentario"]:
+        if item.get("comentario"):
             pdf.multi_cell(0, 6, f"Comentario: {item['comentario']}")
-        for foto in item["fotos"]:
-            try:
-                buf = io.BytesIO(foto["file"])
-                pdf.image(buf, w=50)
-                pdf.multi_cell(0, 6, f"Etiqueta: {foto['tag']}")
-            except Exception:
-                pass
-        pdf.ln(3)
+        pdf.ln(2)
 
+        fotos = item.get("fotos", [])
+        n_imgs = len(fotos)
+        if n_imgs:
+            # Espacio entre imágenes en mm
+            spacing = 5
+            # Ancho de cada imagen
+            w_img = (usable_width - (n_imgs - 1) * spacing) / n_imgs
+            # Ancho total del grupo
+            group_w = n_imgs * w_img + (n_imgs - 1) * spacing
+            # Posición X inicial para centrar el grupo
+            x_start = left_margin + (usable_width - group_w) / 2
+            # Posición Y actual
+            y0 = pdf.get_y()
+
+            # Inserción de imágenes
+            for i, foto in enumerate(fotos):
+                x = x_start + i * (w_img + spacing)
+                buf = io.BytesIO(foto["file"])
+                pdf.image(buf, x=x, y=y0, w=w_img)
+
+            # Avanzar por debajo de las imágenes
+            # asumiendo relación altura ≈ 0.75 * ancho
+            img_h = w_img * 0.75
+            pdf.ln(img_h + 4)
+
+            # Etiquetas centradas bajo cada imagen
+            pdf.set_font("Arial", size=10)
+            for i, foto in enumerate(fotos):
+                x = x_start + i * (w_img + spacing)
+                pdf.set_xy(x, y0 + img_h + 1)
+                pdf.cell(w_img, 5, foto["tag"], align="C")
+            pdf.ln(8)
+
+    # Observaciones finales
     if obs_final:
         pdf.multi_cell(0, 6, f"Obs. finales: {obs_final}")
 
+    # Volcar a buffer
     out = io.BytesIO()
     pdf.output(out)
     out.seek(0)
