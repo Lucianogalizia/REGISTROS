@@ -8,6 +8,7 @@ from flask import (
     redirect, url_for, session, flash, send_file
 )
 from flask_session import Session
+from PIL import Image
 from fpdf import FPDF
 import pandas as pd
 
@@ -49,9 +50,9 @@ def generate_pdf(general, items, obs_final):
     pdf.ln(4)
 
     # Márgenes y ancho útil
-    page_w      = pdf.w
-    lm, rm      = pdf.l_margin, pdf.r_margin
-    usable_w    = page_w - lm - rm
+    page_w    = pdf.w
+    lm, rm    = pdf.l_margin, pdf.r_margin
+    usable_w  = page_w - lm - rm
 
     for idx, item in enumerate(items, 1):
         # Título de ítem
@@ -69,35 +70,43 @@ def generate_pdf(general, items, obs_final):
         fotos = item.get("fotos", [])
         n_imgs = len(fotos)
         if n_imgs:
-            # Espacio entre imágenes
-            spacing   = 5  # mm
-            # Ancho de cada imagen
-            w_img     = (usable_w - (n_imgs - 1) * spacing) / n_imgs
-            # Altura aproximada
-            img_h     = w_img * 0.75
-            # Ancho total del grupo y posición inicial para centrar
-            group_w   = n_imgs * w_img + (n_imgs - 1) * spacing
-            x_start   = lm + (usable_w - group_w) / 2
-            y0        = pdf.get_y()
+            # Espacio interno y ancho de cada imagen
+            spacing = 5  # mm
+            w_img   = (usable_w - (n_imgs - 1) * spacing) / n_imgs
 
-            # 1) Insertar imágenes
+            # Posición inicial para centrar todo el grupo
+            group_w = n_imgs * w_img + (n_imgs - 1) * spacing
+            x_start = lm + (usable_w - group_w) / 2
+            y0      = pdf.get_y()
+
+            # Calculamos alturas reales y dibujamos
+            heights = []
             for i, foto in enumerate(fotos):
-                x = x_start + i * (w_img + spacing)
-                buf = io.BytesIO(foto["file"])
-                pdf.image(buf, x=x, y=y0, w=w_img)
+                img_data = foto["file"]
+                # Descubrimos medidas reales
+                with Image.open(io.BytesIO(img_data)) as img:
+                    orig_w, orig_h = img.size
+                new_h = orig_h * (w_img / orig_w)
+                heights.append(new_h)
 
-            # 2) Imprimir etiquetas debajo de cada imagen
+                # Insertamos imagen
+                x = x_start + i * (w_img + spacing)
+                pdf.image(io.BytesIO(img_data), x=x, y=y0, w=w_img)
+
+            max_h = max(heights)
+
+            # Etiquetas bajo cada imagen
             pdf.set_font("Arial", size=10)
             for i, foto in enumerate(fotos):
                 x = x_start + i * (w_img + spacing)
-                pdf.set_xy(x, y0 + img_h + 1)
+                pdf.set_xy(x, y0 + max_h + 1)
                 pdf.cell(w_img, 5, foto["tag"], align="C")
 
-            # 3) Mover el cursor por debajo de todo el bloque
-            y_end = y0 + img_h + 5 + 4  # img_h + etiqueta (5mm) + padding
+            # Finalmente, movemos el cursor **debajo** del bloque
+            y_end = y0 + max_h + 1 + 5 + 4  # img + gap + etiqueta(5mm) + padding(4mm)
             pdf.set_xy(lm, y_end)
 
-        # Espacio antes del siguiente ítem
+        # Un pequeño espacio antes del siguiente ítem
         pdf.ln(4)
 
     # Observaciones finales
