@@ -35,21 +35,23 @@ df = pd.read_excel("pozos.xlsx")
 POZOS = df["POZO"].dropna().astype(str).tolist()
 
 # ————— Función para generar el PDF —————
-def generate_pdf(general, items, obs_final):
+ddef generate_pdf(general, items, obs_final):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    pdf.cell(0, 10, f"Informe — Pozo: {general['pozo']}", ln=True)
+    # Usar guion simple en lugar de em-dash
+    pdf.cell(0, 10, f"Informe - Pozo: {general['pozo']}", ln=True)
     pdf.cell(0, 8, f"Fecha: {general['fecha']}", ln=True)
     if general["obs_ini"]:
         pdf.multi_cell(0, 6, f"Obs. iniciales: {general['obs_ini']}")
     pdf.ln(4)
 
     for i, item in enumerate(items, 1):
+        # También aquí guiones simples
         pdf.set_font("Arial", "B", 12)
         pdf.cell(
             0, 8,
-            f"Ítem {i}: {item['tipo']} — {item['profundidad']}m — {item['estado']}",
+            f"Ítem {i}: {item['tipo']} - {item['profundidad']}m - {item['estado']}",
             ln=True
         )
         pdf.set_font("Arial", size=11)
