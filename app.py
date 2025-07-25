@@ -35,7 +35,7 @@ df = pd.read_excel("pozos.xlsx")
 POZOS = df["POZO"].dropna().astype(str).tolist()
 
 # ————— Función para generar el PDF —————
-ddef generate_pdf(general, items, obs_final):
+def generate_pdf(general, items, obs_final):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
