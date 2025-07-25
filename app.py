@@ -12,11 +12,10 @@ app = Flask(__name__)
 # Lee SECRET_KEY de entorno o usa un fallback
 app.secret_key = os.getenv('SECRET_KEY', 'CAMBIÁ_POR_UNA_SECRETA')
 
-# Carga lista de pozos desde Excel
-# Si tus valores numéricos usan coma como separador decimal, añade decimal=',':
-df = pd.read_excel("pozos.xlsx", decimal=',')
-
-# Ahora tomamos la columna "POZO" (todo en mayúsculas, tal como en tu Excel)
+# ————— Carga lista de pozos desde Excel —————
+# Lee el Excel tal cual, sin parámetro decimal
+df = pd.read_excel("pozos.xlsx")
+# Toma sólo la columna "POZO" como strings
 POZOS = df["POZO"].dropna().astype(str).tolist()
 
 # Generador de PDF
