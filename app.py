@@ -14,12 +14,13 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'CAMBIÁ_POR_UNA_SECRETA')
 
 # ————— Configuración de Flask‑Session —————
-app.config['SESSION_TYPE'] = 'filesystem'       # guarda la sesión en archivos en /tmp
-app.config['SESSION_FILE_DIR'] = './.flasksession'  
-app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_TYPE']      = 'filesystem'        # guarda la sesión en archivos
+app.config['SESSION_FILE_DIR']  = './.flasksession'   # carpeta donde se almacenan
+app.config['SESSION_PERMANENT'] = False               # sesiones no permanentes
+app.config['SESSION_USE_SIGNER'] = True               # firma los datos de sesión
 Session(app)
 
-# Hacemos disponibles enumerate y range en Jinja
+# ————— Hacer enumerate y range disponibles en Jinja —————
 app.jinja_env.globals.update(enumerate=enumerate, range=range)
 
 # ————— Carga lista de pozos desde Excel —————
@@ -36,11 +37,12 @@ def generate_pdf(general, items, obs_final):
     if general["obs_ini"]:
         pdf.multi_cell(0, 6, f"Obs. iniciales: {general['obs_ini']}")
     pdf.ln(4)
+
     for i, item in enumerate(items, 1):
         pdf.set_font("Arial", "B", 12)
         pdf.cell(
             0, 8,
-            f"Ítem {i}: {item['tipo']} — {item['profundidad']} m — {item['estado']}",
+            f"Ítem {i}: {item['tipo']} — {item['profundidad']}m — {item['estado']}",
             ln=True
         )
         pdf.set_font("Arial", size=11)
@@ -51,11 +53,13 @@ def generate_pdf(general, items, obs_final):
                 buf = io.BytesIO(foto["file"])
                 pdf.image(buf, w=50)
                 pdf.multi_cell(0, 6, f"Etiqueta: {foto['tag']}")
-            except:
+            except Exception:
                 pass
         pdf.ln(3)
+
     if obs_final:
         pdf.multi_cell(0, 6, f"Obs. finales: {obs_final}")
+
     out = io.BytesIO()
     pdf.output(out)
     out.seek(0)
@@ -101,7 +105,7 @@ def step2():
             items = session.get("items", [])
             items.append(item)
             session["items"] = items
-            # Si pulsó “Siguiente” va al paso 3, si solo añadió queda en 2
+            # Si pulsó “Siguiente” avanza; si solo “Añadir”, queda en este paso
             if "next" in request.form:
                 return redirect(url_for("step3"))
             return redirect(url_for("step2"))
@@ -115,7 +119,7 @@ def step3():
         for idx, item in enumerate(items):
             fotos = []
             for fidx in range(3):
-                f   = request.files.get(f"foto_{idx}_{fidx}")
+                f = request.files.get(f"foto_{idx}_{fidx}")
                 tag = request.form.get(f"tag_{idx}_{fidx}")
                 if f:
                     fotos.append({"file": f.read(), "tag": tag})
@@ -142,6 +146,7 @@ def step4():
 
 if __name__ == "__main__":
     app.run()
+
 
 
 
