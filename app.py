@@ -1,6 +1,7 @@
 import os
 import io
 import base64
+from email.message import EmailMessage
 from datetime import datetime
 from flask import (
     Flask, render_template, request,
@@ -176,15 +177,48 @@ def step3():
 def step4():
     general = session.get("general", {})
     items   = session.get("items", [])
-    if request.method == "POST" and "download" in request.form:
+    if request.method == "POST":
         obs_final = request.form.get("obs_final")
-        pdf_buf   = generate_pdf(general, items, obs_final)
-        return send_file(
-            pdf_buf,
-            as_attachment=True,
-            download_name="informe.pdf",
-            mimetype="application/pdf"
-        )
+
+        # 1) Botón “Descargar PDF”
+        if "download" in request.form:
+            pdf_buf = generate_pdf(general, items, obs_final)
+            return send_file(
+                pdf_buf,
+                as_attachment=True,
+                download_name="informe.pdf",
+                mimetype="application/pdf"
+            )
+
+        # 2) Botón “Abrir en Outlook (con adjunto)”
+        if "send" in request.form:
+            # Genero el PDF
+            pdf_buf = generate_pdf(general, items, obs_final)
+
+            # Creo el mensaje .eml
+            msg = EmailMessage()
+            msg["Subject"] = f"Informe intervención — Pozo {general['pozo']}"
+            msg["To"]      = "dest1@dominio.com, dest2@dominio.com"
+            msg.set_content("Adjunto el informe de intervención. ¡Gracias!")
+
+            # Adjunto el PDF
+            msg.add_attachment(
+                pdf_buf.getvalue(),
+                maintype="application",
+                subtype="pdf",
+                filename="informe.pdf"
+            )
+
+            # Devuelvo un fichero .eml para que el cliente lo abra con Outlook
+            eml_bytes = msg.as_bytes()
+            return send_file(
+                io.BytesIO(eml_bytes),
+                as_attachment=True,
+                download_name="informe.eml",
+                mimetype="message/rfc822"
+            )
+
+    # GET: renderiza el formulario
     return render_template("step4.html", general=general, items=items)
 
 if __name__ == "__main__":
