@@ -5,17 +5,22 @@ from flask import (
     Flask, render_template, request,
     redirect, url_for, session, flash, send_file
 )
+from flask_session import Session
 from fpdf import FPDF
 import pandas as pd
 
 # ————— Inicialización de la app —————
 app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'CAMBIÁ_POR_UNA_SECRETA')
+
+# ————— Configuración de Flask‑Session —————
+app.config['SESSION_TYPE'] = 'filesystem'       # guarda la sesión en archivos en /tmp
+app.config['SESSION_FILE_DIR'] = './.flasksession'  
+app.config['SESSION_PERMANENT'] = False
+Session(app)
 
 # Hacemos disponibles enumerate y range en Jinja
 app.jinja_env.globals.update(enumerate=enumerate, range=range)
-
-# Clave secreta para sesiones
-app.secret_key = os.getenv('SECRET_KEY', 'CAMBIÁ_POR_UNA_SECRETA')
 
 # ————— Carga lista de pozos desde Excel —————
 df = pd.read_excel("pozos.xlsx")
@@ -137,4 +142,6 @@ def step4():
 
 if __name__ == "__main__":
     app.run()
+
+
 
