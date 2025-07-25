@@ -1,5 +1,6 @@
 import os
 import io
+import base64
 from datetime import datetime
 from flask import (
     Flask, render_template, request,
@@ -14,11 +15,17 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'CAMBIÁ_POR_UNA_SECRETA')
 
 # ————— Configuración de Flask‑Session —————
-app.config['SESSION_TYPE']      = 'filesystem'        # guarda la sesión en archivos
-app.config['SESSION_FILE_DIR']  = './.flasksession'   # carpeta donde se almacenan
-app.config['SESSION_PERMANENT'] = False               # sesiones no permanentes
-app.config['SESSION_USE_SIGNER'] = True               # firma los datos de sesión
+app.config['SESSION_TYPE']      = 'filesystem'
+app.config['SESSION_FILE_DIR']  = './.flasksession'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
 Session(app)
+
+# ————— Filtro Jinja para Base64 —————
+@app.template_filter('b64encode')
+def b64encode_filter(data: bytes) -> str:
+    """Convierte bytes a cadena base64 para incrustar imágenes."""
+    return base64.b64encode(data).decode('utf-8')
 
 # ————— Hacer enumerate y range disponibles en Jinja —————
 app.jinja_env.globals.update(enumerate=enumerate, range=range)
@@ -105,7 +112,6 @@ def step2():
             items = session.get("items", [])
             items.append(item)
             session["items"] = items
-            # Si pulsó “Siguiente” avanza; si solo “Añadir”, queda en este paso
             if "next" in request.form:
                 return redirect(url_for("step3"))
             return redirect(url_for("step2"))
@@ -146,6 +152,7 @@ def step4():
 
 if __name__ == "__main__":
     app.run()
+
 
 
 
