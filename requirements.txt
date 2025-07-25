@@ -12,3 +12,4 @@ Werkzeug==2.0.3
 openpyxl==3.0.10
 xlsxwriter
 fpdf2==2.5.5
+Flask-Session==0.5.1
